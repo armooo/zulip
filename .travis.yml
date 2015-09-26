@@ -1,0 +1,35 @@
+sudo: required
+language: python
+python:
+    - "2.7"
+addons:
+    apt:
+        packages:
+            - libffi-dev
+            - libldap2-dev
+            - postgresql-server-dev-all
+            - libmemcached-dev
+            - hunspell-en-us
+            - puppet
+    postgresql: "9.1"
+services:
+    - rabbitmq
+    - memcached
+    - redis-server
+install:
+    - wget https://dl.dropboxusercontent.com/u/283158365/zuliposs/postgresql-9.1-tsearch-extras_0.1.2_amd64.deb
+    - sudo dpkg -i postgresql-9.1-tsearch-extras_0.1.2_amd64.deb
+    - pip install -r requirements.txt
+    - npm install jquery cssstyle htmlparser2 nwmatcher
+    - ./scripts/setup/generate_secrets.py --development
+    - ./scripts/setup/configure-rabbitmq
+    - sudo cp puppet/zulip/files/postgresql/zulip_english.stop /usr/share/postgresql/9.1/tsearch_data/
+    - ./tools/postgres-init-db
+    - ./tools/do-destroy-rebuild-database
+    - ./tools/emoji_dump/build_emoji
+    - ./tools/postgres-init-test-db
+    - ./tools/do-destroy-rebuild-test-database
+script:
+    - ./tools/test-backend
+    - ./tools/test-js-with-node
+    - ./tools/test-js-with-casper
